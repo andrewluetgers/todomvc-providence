@@ -140,7 +140,8 @@ KeyedCursorPrototype.deref =
 KeyedCursorPrototype.valueOf =
 IndexedCursorPrototype.deref =
 IndexedCursorPrototype.valueOf = function(notSetValue) {
-  return this._rootData.getIn(this._keyPath, notSetValue);
+  const rootData = this.root.unbox(this.root.data);
+  return rootData.getIn(this.keyPath, notSetValue);
 }
 
 KeyedCursorPrototype.get =
@@ -154,7 +155,8 @@ IndexedCursorPrototype.getIn = function(keyPath, notSetValue) {
   if (keyPath.length === 0) {
     return this;
   }
-  var value = this._rootData.getIn(newKeyPath(this._keyPath, keyPath), NOT_SET);
+  const rootData = this.root.unbox(this.root.data);
+  var value = rootData.getIn(newKeyPath(this.keyPath, keyPath), NOT_SET);
   return value === NOT_SET ? notSetValue : wrappedValue(this, keyPath, value);
 }
 
