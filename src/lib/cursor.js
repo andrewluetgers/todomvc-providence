@@ -62,6 +62,8 @@ function cursorFrom(data, keyPath, options) {
 
     keyPath: [],
     toKeyPath: valToKeyPath,
+
+    // parasitic object that get inherited by all subcursors
     _meta: {
       listeners: Immutable.Map()
     }
@@ -373,7 +375,6 @@ function subCursor(cursor, keyPath, value) {
 function updateCursor(cursor, changeFn, changeKeyPath) {
 
   const deepChange = arguments.length > 2;
-
   const rootData = cursor.root.unbox(cursor.root.data);
 
   const newRootData = rootData.updateIn(
@@ -382,7 +383,33 @@ function updateCursor(cursor, changeFn, changeKeyPath) {
     changeFn
   );
 
-  // TODO: refactor this
+  let currentPath = [];
+  let needle = 0;
+  const _len = cursor.keyPath.length;
+
+  while(needle <= _len) {
+
+    const _keyPath = newKeyPath(currentPath, [LISTENERS]);
+    const listeners = cursor._meta.listeners.getIn(_keyPath, NOT_SET);
+
+    if(listeners !== NOT_SET) {
+      listeners.forEach((observer) => {
+        const keyPath = cursor.keyPath || []; // TODO: why? does invariant that cursor.keyPath is an array not always hold?
+        const kp =
+        observer.call(
+          void 0,
+          newRootData,
+          rootData,
+          deepChange ? newKeyPath(keyPath, changeKeyPath) : keyPath
+        );
+      });
+    }
+
+    currentPath = newKeyPath(currentPath, [cursor.keyPath[needle]]);
+    needle++;
+  }
+
+  // TODO: refactor this as an option
   //
   // var keyPath = cursor._keyPath || [];
   // var result = cursor._onChange && cursor._onChange.call(

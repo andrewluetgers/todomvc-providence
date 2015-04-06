@@ -23,9 +23,18 @@ const options = {
 const cursorA = Cursor.from(structure, options);
 const cursorB = cursorA.cursor('foo');
 
+cursorA.observe(function() {
+    console.log('changed A', arguments)
+});
+
+cursorB.observe(function() {
+    console.log('changed B', arguments)
+});
+
 cursorB.set('bar', 42);
 
-console.log(cursorA.root.data.map.toJS());
+console.log(cursorA);
+console.log(cursorB);
 
 
 /**
