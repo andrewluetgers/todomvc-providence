@@ -8,6 +8,14 @@
  */
 
 /**
+ * Forked from: https://github.com/facebook/immutable-js/tree/3799d5f223315a41ceb524b627e558c548f3b7c5/contrib/cursor
+ *
+ * Why?
+ *
+ * - customize behaviour of 'wrapper' for reference to a path in a nested immutable data structure
+ */
+
+/**
  * Cursor is expected to be required in a node or other CommonJS context:
  *
  *     var Cursor = require('immutable/contrib/cursor');
@@ -15,42 +23,109 @@
  * If you wish to use it in the browser, please check out Browserify or WebPack!
  */
 
-var Immutable = require('immutable');
-var Iterable = Immutable.Iterable;
-var Iterator = Iterable.Iterator;
-var Seq = Immutable.Seq;
-var Map = Immutable.Map;
+const Immutable = require('immutable');
+const Iterable = Immutable.Iterable;
+const Iterator = Iterable.Iterator;
+const Seq = Immutable.Seq;
+const Map = Immutable.Map;
 
+// TODO: eventually remove this
+const _ = require('lodash');
 
-function cursorFrom(rootData, keyPath, onChange) {
-  if (arguments.length === 1) {
-    keyPath = [];
-  } else if (typeof keyPath === 'function') {
-    onChange = keyPath;
-    keyPath = [];
-  } else {
-    keyPath = valToKeyPath(keyPath);
+const identity = x => x;
+
+function cursorFrom(data, keyPath, options) {
+
+  /**
+   * legal full structure for options:
+   *
+   * options = {
+   *   root: {
+   *     data: any,
+   *     box: function,
+   *     unbox: function
+   *   },
+   *
+   *   keyPath: array, // this precedes options.key
+   *   key: any,
+   *   toKeyPath: function
+   * }
+   */
+
+  let proto = {
+    root: {
+      data: data,
+      box: identity,
+      unbox: identity,
+    },
+
+    keyPath: [],
+    toKeyPath: valToKeyPath
+  };
+
+  switch(arguments.length) {
+    case 1:
+      options = {};
+      keyPath = [];
+
+      if (_.isPlainObject(keyPath)) {
+        options = data;
+        data = options.root.data; // absolutely required
+        keyPath = (options.keyPath || options.key) || [];
+      }
+      break;
+    case 2:
+      if (_.isPlainObject(keyPath)) {
+        options = keyPath;
+        keyPath = (options.keyPath || options.key) || [];
+      } else {
+        options = {};
+      }
+      break;
+    default:
   }
-  return makeCursor(rootData, keyPath, onChange);
+
+  const toKeyPath = options.toKeyPath || valToKeyPath;
+  proto.toKeyPath = toKeyPath;
+  proto.keyPath = toKeyPath(keyPath);
+
+  if(options.root) {
+    proto.root.box = options.root.box || identity;
+    proto.root.unbox = options.root.unbox || identity;
+  }
+
+  return makeCursor(proto);
 }
 
 
 var KeyedCursorPrototype = Object.create(Seq.Keyed.prototype);
 var IndexedCursorPrototype = Object.create(Seq.Indexed.prototype);
 
-function KeyedCursor(rootData, keyPath, onChange, size) {
-  this.size = size;
-  this._rootData = rootData;
-  this._keyPath = keyPath;
-  this._onChange = onChange;
+function KeyedCursor(proto) {
+  this.size = proto.size;
+
+  this.root = {
+    data: proto.root.data,
+    box: proto.root.box,
+    unbox: proto.root.unbox
+  };
+
+  this.keyPath = proto.keyPath;
+  this.toKeyPath = proto.toKeyPath;
 }
 KeyedCursorPrototype.constructor = KeyedCursor;
 
-function IndexedCursor(rootData, keyPath, onChange, size) {
-  this.size = size;
-  this._rootData = rootData;
-  this._keyPath = keyPath;
-  this._onChange = onChange;
+function IndexedCursor(proto) {
+  this.size = proto.size;
+
+  this.root = {
+    data: proto.root.data,
+    box: proto.root.box,
+    unbox: proto.root.unbox
+  };
+
+  this.keyPath = proto.keyPath;
+  this.toKeyPath = proto.toKeyPath;
 }
 IndexedCursorPrototype.constructor = IndexedCursor;
 
@@ -195,7 +270,7 @@ IndexedCursorPrototype.withMutations = function(fn) {
 
 KeyedCursorPrototype.cursor =
 IndexedCursorPrototype.cursor = function(subKeyPath) {
-  subKeyPath = valToKeyPath(subKeyPath);
+  subKeyPath = this.toKeyPath(subKeyPath);
   return subKeyPath.length === 0 ? this : subCursor(this, subKeyPath);
 }
 
@@ -243,15 +318,17 @@ KeyedCursor.prototype = KeyedCursorPrototype;
 IndexedCursor.prototype = IndexedCursorPrototype;
 
 
-var NOT_SET = {}; // Sentinel value
+const NOT_SET = {}; // Sentinel value
 
-function makeCursor(rootData, keyPath, onChange, value) {
-  if (arguments.length < 4) {
-    value = rootData.getIn(keyPath);
+function makeCursor(proto, value) {
+
+  if(arguments.length === 1) {
+    value = proto.root.unbox(proto.root.data);
   }
-  var size = value && value.size;
-  var CursorClass = Iterable.isIndexed(value) ? IndexedCursor : KeyedCursor;
-  return new CursorClass(rootData, keyPath, onChange, size);
+
+  proto.size = value && value.size;
+  const CursorClass = Iterable.isIndexed(value) ? IndexedCursor : KeyedCursor;
+  return new CursorClass(proto);
 }
 
 function wrappedValue(cursor, keyPath, value) {
@@ -259,39 +336,66 @@ function wrappedValue(cursor, keyPath, value) {
 }
 
 function subCursor(cursor, keyPath, value) {
+
+  const proto = makeProto(cursor, {
+    keyPath: newKeyPath(cursor.keyPath, keyPath)
+  });
+
   if (arguments.length < 3) {
-    return makeCursor( // call without value
-      cursor._rootData,
-      newKeyPath(cursor._keyPath, keyPath),
-      cursor._onChange
-    );
+    // call without value
+    return makeCursor(proto);
   }
-  return makeCursor(
-    cursor._rootData,
-    newKeyPath(cursor._keyPath, keyPath),
-    cursor._onChange,
-    value
-  );
+  return makeCursor(proto, value);
 }
 
 function updateCursor(cursor, changeFn, changeKeyPath) {
-  var deepChange = arguments.length > 2;
-  var newRootData = cursor._rootData.updateIn(
-    cursor._keyPath,
+
+  const deepChange = arguments.length > 2;
+
+  const rootData = cursor.root.unbox(cursor.root.data);
+
+  const newRootData = rootData.updateIn(
+    cursor.keyPath,
     deepChange ? Map() : undefined,
     changeFn
   );
-  var keyPath = cursor._keyPath || [];
-  var result = cursor._onChange && cursor._onChange.call(
-    undefined,
-    newRootData,
-    cursor._rootData,
-    deepChange ? newKeyPath(keyPath, changeKeyPath) : keyPath
-  );
-  if (result !== undefined) {
-    newRootData = result;
-  }
-  return makeCursor(newRootData, cursor._keyPath, cursor._onChange);
+
+  // TODO: refactor this
+  //
+  // var keyPath = cursor._keyPath || [];
+  // var result = cursor._onChange && cursor._onChange.call(
+  //   undefined,
+  //   newRootData,
+  //   cursor._rootData,
+  //   deepChange ? newKeyPath(keyPath, changeKeyPath) : keyPath
+  // );
+  // if (result !== undefined) {
+  //   newRootData = result;
+  // }
+
+  const proto = makeProto(cursor, {
+    root: {
+      data: cursor.root.box(newRootData, cursor.root.data)
+    }
+  });
+
+  return makeCursor(proto);
+}
+
+function makeProto(cursor, proto={}) {
+  let newproto = {
+    root: {
+    },
+
+    keyPath: proto.keyPath || cursor.keyPath,
+    toKeyPath: proto.toKeyPath || cursor.toKeyPath
+  };
+
+  newproto.root.data = (proto.root && proto.root.data) || cursor.root.data;
+  newproto.root.box = (proto.root && proto.root.box) || cursor.root.box;
+  newproto.root.unbox = (proto.root && proto.root.unbox) || cursor.root.unbox;
+
+  return newproto;
 }
 
 function newKeyPath(head, tail) {

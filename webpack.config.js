@@ -99,7 +99,7 @@ module.exports = {
             'React': 'react',
             'Promise': 'bluebird',
             // 'bluebird': 'bluebird',
-            // 'Immutable'
+            'Immutable': 'immutable'
         }),
         new webpack.DefinePlugin({
             // BROWSER_BUILD: true

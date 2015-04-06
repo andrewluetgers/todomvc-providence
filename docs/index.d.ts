@@ -42,20 +42,32 @@ declare module 'immutable/contrib/cursor' {
 
 
   export function from(
+    options: Object
+  ): Cursor;
+  export function from(
     collection: Immutable.Collection<any, any>,
-    onChange?: (newValue: any, oldValue?: any, keyPath?: Array<any>) => any
+    options?: Object
   ): Cursor;
   export function from(
     collection: Immutable.Collection<any, any>,
     keyPath: Array<any>,
-    onChange?: (newValue: any, oldValue?: any, keyPath?: Array<any>) => any
+    options?: Object
   ): Cursor;
   export function from(
     collection: Immutable.Collection<any, any>,
     key: any,
-    onChange?: (newValue: any, oldValue?: any, keyPath?: Array<any>) => any
+    options: Object
   ): Cursor;
-
+  export function from(
+    collection: any,
+    keyPath?: Array<any>,
+    options: Object
+  ): Cursor;
+  export function from(
+    collection: any,
+    key?: any,
+    options: Object
+  ): Cursor;
 
   export interface Cursor extends Immutable.Seq<any, any> {
 
