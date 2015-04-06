@@ -9,6 +9,8 @@ To do
 - [ ] port cursor test
 - [ ] cursor observation capabilities
 
+- [ ] implement todomvc
+
 ## Future
 
 - [ ] port out new cursor library
