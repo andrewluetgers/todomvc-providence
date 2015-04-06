@@ -63,6 +63,8 @@ function cursorFrom(data, keyPath, options) {
     keyPath: [],
     toKeyPath: valToKeyPath,
 
+    onChange: void 0,
+
     // parasitic object that get inherited by all subcursors
     _meta: {
       listeners: Immutable.Map()
@@ -101,35 +103,30 @@ function cursorFrom(data, keyPath, options) {
 var KeyedCursorPrototype = Object.create(Seq.Keyed.prototype);
 var IndexedCursorPrototype = Object.create(Seq.Indexed.prototype);
 
-function KeyedCursor(proto) {
-  this.size = proto.size;
+function applyProto(ctx, proto) {
+  ctx.size = proto.size;
 
-  this.root = {
+  ctx.root = {
     data: proto.root.data,
     box: proto.root.box,
     unbox: proto.root.unbox
   };
 
-  this.keyPath = proto.keyPath;
-  this.toKeyPath = proto.toKeyPath;
+  ctx.keyPath = proto.keyPath;
+  ctx.toKeyPath = proto.toKeyPath;
 
-  this._meta = proto._meta;
+  ctx.onChange = proto.onChange;
+
+  ctx._meta = proto._meta;
+}
+
+function KeyedCursor(proto) {
+  applyProto(this, proto);
 }
 KeyedCursorPrototype.constructor = KeyedCursor;
 
 function IndexedCursor(proto) {
-  this.size = proto.size;
-
-  this.root = {
-    data: proto.root.data,
-    box: proto.root.box,
-    unbox: proto.root.unbox
-  };
-
-  this.keyPath = proto.keyPath;
-  this.toKeyPath = proto.toKeyPath;
-
-  this._meta = proto._meta;
+  applyProto(this, proto);
 }
 IndexedCursorPrototype.constructor = IndexedCursor;
 
@@ -370,11 +367,15 @@ function updateCursor(cursor, changeFn, changeKeyPath) {
   const deepChange = arguments.length > 2;
   const rootData = cursor.root.unbox(cursor.root.data);
 
-  const newRootData = rootData.updateIn(
+  let newRootData = rootData.updateIn(
     cursor.keyPath,
     deepChange ? Map() : undefined,
     changeFn
   );
+
+  // TODO: why? does invariant that cursor.keyPath is an array not always hold?
+  const keyPath = cursor.keyPath || [];
+  const args = [newRootData, rootData, deepChange ? newKeyPath(keyPath, changeKeyPath) : keyPath];
 
   let currentPath = [];
   let needle = 0;
@@ -387,14 +388,7 @@ function updateCursor(cursor, changeFn, changeKeyPath) {
 
     if(listeners !== NOT_SET) {
       listeners.forEach((observer) => {
-        const keyPath = cursor.keyPath || []; // TODO: why? does invariant that cursor.keyPath is an array not always hold?
-        const kp =
-        observer.call(
-          void 0,
-          newRootData,
-          rootData,
-          deepChange ? newKeyPath(keyPath, changeKeyPath) : keyPath
-        );
+        observer.apply(void 0, args);
       });
     }
 
@@ -404,18 +398,10 @@ function updateCursor(cursor, changeFn, changeKeyPath) {
     needle++;
   }
 
-  // TODO: refactor this as an option
-  //
-  // var keyPath = cursor._keyPath || [];
-  // var result = cursor._onChange && cursor._onChange.call(
-  //   undefined,
-  //   newRootData,
-  //   cursor._rootData,
-  //   deepChange ? newKeyPath(keyPath, changeKeyPath) : keyPath
-  // );
-  // if (result !== undefined) {
-  //   newRootData = result;
-  // }
+  const result = cursor.onChange && cursor.onChange.apply(undefined, args);
+  if (result !== undefined) {
+    newRootData = result;
+  }
 
   const proto = makeProto(cursor, {
     root: {
@@ -437,6 +423,8 @@ function makeProto(cursor, proto={}) {
 
     keyPath: proto.keyPath || cursor.keyPath,
     toKeyPath: proto.toKeyPath || cursor.toKeyPath,
+
+    onChange: proto.onChange || cursor.onChange,
 
     _meta: cursor._meta
   };
