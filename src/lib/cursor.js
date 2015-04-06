@@ -426,17 +426,18 @@ function updateCursor(cursor, changeFn, changeKeyPath) {
 }
 
 function makeProto(cursor, proto={}) {
+  const _root = proto.root;
   return {
     root: {
       data: (_root && _root.data) || cursor.root.data,
-      box = (_root && _root.box) || cursor.root.box,
-      unbox = (_root && _root.unbox) || cursor.root.unbox
+      box: (_root && _root.box) || cursor.root.box,
+      unbox: (_root && _root.unbox) || cursor.root.unbox
     },
 
     keyPath: proto.keyPath || cursor.keyPath,
     toKeyPath: proto.toKeyPath || cursor.toKeyPath,
 
-    _meta = cursor._meta
+    _meta: cursor._meta
   };
 }
 
