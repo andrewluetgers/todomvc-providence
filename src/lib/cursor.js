@@ -53,7 +53,7 @@ function cursorFrom(data, keyPath, options) {
    * }
    */
 
-  const _proto = {
+  const _newProto = {
     root: {
       data: data,
       box: identity,
@@ -93,7 +93,7 @@ function cursorFrom(data, keyPath, options) {
     default:
   }
 
-  let proto = makeProto(_proto, options);
+  let proto = makeProto(_newProto, options);
   proto.keyPath = proto.toKeyPath(keyPath);
 
   return makeCursor(proto);
@@ -102,23 +102,6 @@ function cursorFrom(data, keyPath, options) {
 
 var KeyedCursorPrototype = Object.create(Seq.Keyed.prototype);
 var IndexedCursorPrototype = Object.create(Seq.Indexed.prototype);
-
-function applyProto(ctx, proto) {
-  ctx.size = proto.size;
-
-  ctx.root = {
-    data: proto.root.data,
-    box: proto.root.box,
-    unbox: proto.root.unbox
-  };
-
-  ctx.keyPath = proto.keyPath;
-  ctx.toKeyPath = proto.toKeyPath;
-
-  ctx.onChange = proto.onChange;
-
-  ctx._meta = proto._meta;
-}
 
 function KeyedCursor(proto) {
   applyProto(this, proto);
@@ -428,6 +411,23 @@ function makeProto(cursor, proto={}) {
 
     _meta: cursor._meta
   };
+}
+
+function applyProto(ctx, proto) {
+  ctx.size = proto.size;
+
+  ctx.root = {
+    data: proto.root.data,
+    box: proto.root.box,
+    unbox: proto.root.unbox
+  };
+
+  ctx.keyPath = proto.keyPath;
+  ctx.toKeyPath = proto.toKeyPath;
+
+  ctx.onChange = proto.onChange;
+
+  ctx._meta = proto._meta;
 }
 
 function newKeyPath(head, tail) {
