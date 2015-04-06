@@ -33,6 +33,7 @@ const Map = Immutable.Map;
 const _ = require('lodash');
 
 const identity = x => x;
+const LISTENERS = {};
 
 function cursorFrom(data, keyPath, options) {
 
@@ -60,7 +61,10 @@ function cursorFrom(data, keyPath, options) {
     },
 
     keyPath: [],
-    toKeyPath: valToKeyPath
+    toKeyPath: valToKeyPath,
+    _meta: {
+      listeners: Immutable.Map()
+    }
   };
 
   switch(arguments.length) {
@@ -112,6 +116,8 @@ function KeyedCursor(proto) {
 
   this.keyPath = proto.keyPath;
   this.toKeyPath = proto.toKeyPath;
+
+  this._meta = proto._meta;
 }
 KeyedCursorPrototype.constructor = KeyedCursor;
 
@@ -126,6 +132,8 @@ function IndexedCursor(proto) {
 
   this.keyPath = proto.keyPath;
   this.toKeyPath = proto.toKeyPath;
+
+  this._meta = proto._meta;
 }
 IndexedCursorPrototype.constructor = IndexedCursor;
 
@@ -276,6 +284,18 @@ IndexedCursorPrototype.cursor = function(subKeyPath) {
   return subKeyPath.length === 0 ? this : subCursor(this, subKeyPath);
 }
 
+KeyedCursorPrototype.observe =
+IndexedCursorPrototype.observe = function(observer) {
+
+  const _keyPath = newKeyPath(this.keyPath, [LISTENERS, observer]);
+
+  this._meta.listeners = this._meta.listeners.setIn(_keyPath, observer);
+
+  return function() {
+    // TODO: unobserve
+  };
+}
+
 /**
  * All iterables need to implement __iterate
  */
@@ -396,6 +416,8 @@ function makeProto(cursor, proto={}) {
   newproto.root.data = (proto.root && proto.root.data) || cursor.root.data;
   newproto.root.box = (proto.root && proto.root.box) || cursor.root.box;
   newproto.root.unbox = (proto.root && proto.root.unbox) || cursor.root.unbox;
+
+  newproto._meta = cursor._meta;
 
   return newproto;
 }
