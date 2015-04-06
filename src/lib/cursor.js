@@ -33,6 +33,9 @@ const Map = Immutable.Map;
 const _ = require('lodash');
 
 const identity = x => x;
+
+// Sentinel values
+const NOT_SET = {};
 const LISTENERS = {};
 
 function cursorFrom(data, keyPath, options) {
@@ -100,8 +103,8 @@ function cursorFrom(data, keyPath, options) {
 }
 
 
-var KeyedCursorPrototype = Object.create(Seq.Keyed.prototype);
-var IndexedCursorPrototype = Object.create(Seq.Indexed.prototype);
+const KeyedCursorPrototype = Object.create(Seq.Keyed.prototype);
+const IndexedCursorPrototype = Object.create(Seq.Indexed.prototype);
 
 function KeyedCursor(proto) {
   applyProto(this, proto);
@@ -140,7 +143,7 @@ IndexedCursorPrototype.getIn = function(keyPath, notSetValue) {
     return this;
   }
   const rootData = this.root.unbox(this.root.data);
-  var value = rootData.getIn(newKeyPath(this.keyPath, keyPath), NOT_SET);
+  const value = rootData.getIn(newKeyPath(this.keyPath, keyPath), NOT_SET);
   return value === NOT_SET ? notSetValue : wrappedValue(this, keyPath, value);
 }
 
@@ -150,7 +153,7 @@ KeyedCursorPrototype.set = function(key, value) {
 }
 
 IndexedCursorPrototype.push = function(/* values */) {
-  var args = arguments;
+  const args = arguments;
   return updateCursor(this, function (m) {
     return m.push.apply(m, args);
   });
@@ -163,7 +166,7 @@ IndexedCursorPrototype.pop = function() {
 }
 
 IndexedCursorPrototype.unshift = function(/* values */) {
-  var args = arguments;
+  const args = arguments;
   return updateCursor(this, function (m) {
     return m.unshift.apply(m, args);
   });
@@ -211,7 +214,7 @@ KeyedCursorPrototype.updateIn = function(keyPath, notSetValue, updater) {
 
 IndexedCursorPrototype.merge =
 KeyedCursorPrototype.merge = function(/*...iters*/) {
-  var args = arguments;
+  const args = arguments;
   return updateCursor(this, function (m) {
     return m.merge.apply(m, args);
   });
@@ -219,7 +222,7 @@ KeyedCursorPrototype.merge = function(/*...iters*/) {
 
 IndexedCursorPrototype.mergeWith =
 KeyedCursorPrototype.mergeWith = function(merger/*, ...iters*/) {
-  var args = arguments;
+  const args = arguments;
   return updateCursor(this, function (m) {
     return m.mergeWith.apply(m, args);
   });
@@ -230,7 +233,7 @@ KeyedCursorPrototype.mergeIn = Map.prototype.mergeIn;
 
 IndexedCursorPrototype.mergeDeep =
 KeyedCursorPrototype.mergeDeep = function(/*...iters*/) {
-  var args = arguments;
+  const args = arguments;
   return updateCursor(this, function (m) {
     return m.mergeDeep.apply(m, args);
   });
@@ -238,7 +241,7 @@ KeyedCursorPrototype.mergeDeep = function(/*...iters*/) {
 
 IndexedCursorPrototype.mergeDeepWith =
 KeyedCursorPrototype.mergeDeepWith = function(merger/*, ...iters*/) {
-  var args = arguments;
+  const args = arguments;
   return updateCursor(this, function (m) {
     return m.mergeDeepWith.apply(m, args);
   });
@@ -276,8 +279,8 @@ IndexedCursorPrototype.observe = function(observer) {
  */
 KeyedCursorPrototype.__iterate =
 IndexedCursorPrototype.__iterate = function(fn, reverse) {
-  var cursor = this;
-  var deref = cursor.deref();
+  const cursor = this;
+  const deref = cursor.deref();
   return deref && deref.__iterate ? deref.__iterate(
     function (v, k) { return fn(wrappedValue(cursor, [k], v), k, cursor); },
     reverse
@@ -289,21 +292,21 @@ IndexedCursorPrototype.__iterate = function(fn, reverse) {
  */
 KeyedCursorPrototype.__iterator =
 IndexedCursorPrototype.__iterator = function(type, reverse) {
-  var deref = this.deref();
-  var cursor = this;
-  var iterator = deref && deref.__iterator &&
+  const deref = this.deref();
+  const cursor = this;
+  const iterator = deref && deref.__iterator &&
     deref.__iterator(Iterator.ENTRIES, reverse);
   return new Iterator(function () {
     if (!iterator) {
       return { value: undefined, done: true };
     }
-    var step = iterator.next();
+    const step = iterator.next();
     if (step.done) {
       return step;
     }
-    var entry = step.value;
-    var k = entry[0];
-    var v = wrappedValue(cursor, [k], entry[1]);
+    const entry = step.value;
+    const k = entry[0];
+    const v = wrappedValue(cursor, [k], entry[1]);
     return {
       value: type === Iterator.KEYS ? k : type === Iterator.VALUES ? v : [k, v],
       done: false
@@ -314,8 +317,6 @@ IndexedCursorPrototype.__iterator = function(type, reverse) {
 KeyedCursor.prototype = KeyedCursorPrototype;
 IndexedCursor.prototype = IndexedCursorPrototype;
 
-
-const NOT_SET = {}; // Sentinel value
 
 function makeCursor(proto, value) {
 
