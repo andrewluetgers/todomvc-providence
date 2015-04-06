@@ -8,3 +8,7 @@ To do
 
 - [ ] port cursor test
 - [ ] cursor observation capabilities
+
+## Future
+
+- [ ] port out new cursor library
