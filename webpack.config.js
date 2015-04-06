@@ -18,9 +18,9 @@ module.exports = {
             // 'immstruct',
             // 'react-router',
             // 'react-document-title',
-            // '6to5-runtime/regenerator',
-            // '6to5-runtime/core-js',
-            // '6to5-runtime/helpers'
+            'babel-runtime/regenerator',
+            'babel-runtime/core-js',
+            // 'babel-runtime/helpers',
         ]
     },
 
@@ -32,7 +32,7 @@ module.exports = {
 
     resolve: {
         root: path.join(appRoot, "/src/"),
-        modulesDirectories: ["node_modules", "bower_components"]
+        modulesDirectories: ["node_modules"]
     },
 
     module: {
