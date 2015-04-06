@@ -1,35 +1,10 @@
-# Framework Name • [TodoMVC](http://todomvc.com)
+# Omniscient + Cursors • [TodoMVC](http://todomvc.com)
 
-> Official description of the framework (from its website)
+> Experimenting with implementation change of Immutable's Cursor library 
+> to be more flexible and useful with Omniscient
 
+To do
+=====
 
-## Resources
-
-- [Website]()
-- [Documentation]()
-- [Used by]()
-- [Blog]()
-- [FAQ]()
-
-### Articles
-
-- [Interesting article]()
-
-### Support
-
-- [StackOverflow](http://stackoverflow.com/questions/tagged/__)
-- [Google Groups]()
-- [Twitter](http://twitter.com/__)
-- [Google+]()
-
-*Let us [know](https://github.com/tastejs/todomvc/issues) if you discover anything worth sharing.*
-
-
-## Implementation
-
-How was the app created? Anything worth sharing about the process of creating the app? Any spec violations?
-
-
-## Credit
-
-Created by [Your Name](http://your-website.com)
+- [ ] port cursor test
+- [ ] cursor observation capabilities
