@@ -284,7 +284,6 @@ KeyedCursorPrototype.observe =
 IndexedCursorPrototype.observe = function(observer) {
 
   const _keyPath = newKeyPath(this.keyPath, [LISTENERS, observer]);
-
   this._meta.listeners = this._meta.listeners.setIn(_keyPath, observer);
 
   return function() {
@@ -398,6 +397,8 @@ function updateCursor(cursor, changeFn, changeKeyPath) {
         );
       });
     }
+
+    if(needle === _len) break;
 
     currentPath = newKeyPath(currentPath, [cursor.keyPath[needle]]);
     needle++;
