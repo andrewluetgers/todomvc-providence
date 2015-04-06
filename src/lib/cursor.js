@@ -53,7 +53,7 @@ function cursorFrom(data, keyPath, options) {
    * }
    */
 
-  let proto = {
+  const _proto = {
     root: {
       data: data,
       box: identity,
@@ -91,14 +91,8 @@ function cursorFrom(data, keyPath, options) {
     default:
   }
 
-  const toKeyPath = options.toKeyPath || valToKeyPath;
-  proto.toKeyPath = toKeyPath;
-  proto.keyPath = toKeyPath(keyPath);
-
-  if(options.root) {
-    proto.root.box = options.root.box || identity;
-    proto.root.unbox = options.root.unbox || identity;
-  }
+  let proto = makeProto(_proto, options);
+  proto.keyPath = proto.toKeyPath(keyPath);
 
   return makeCursor(proto);
 }
